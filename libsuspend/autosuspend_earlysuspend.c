@@ -37,6 +37,7 @@
 static int sPowerStatefd;
 static const char *pwr_state_mem = "mem";
 static const char *pwr_state_on = "on";
+static void (*wakeup_func)(bool success) = NULL;
 static pthread_t earlysuspend_thread;
 static pthread_mutex_t earlysuspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t earlysuspend_cond = PTHREAD_COND_INITIALIZER;
@@ -154,9 +155,32 @@ err:
     return ret;
 }
 
+static int autosuspend_force_suspend(int timeout_ms) {
+    ALOGV("force_suspend called with timeout: %s\n", timeout_ms);
+
+    int ret = init_state_fd();
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = write(sPowerStatefd, pwr_state_mem, strlen(pwr_state_mem));
+
+    return ret < 0 ? ret : 0;
+}
+
+static void autosuspend_set_wakeup_callback(void (*func)(bool success)) {
+    if (wakeup_func != NULL) {
+        ALOGE("duplicate wakeup callback applied, keeping original\n");
+        return;
+    }
+    wakeup_func = func;
+}
+
 struct autosuspend_ops autosuspend_earlysuspend_ops = {
         .enable = autosuspend_earlysuspend_enable,
         .disable = autosuspend_earlysuspend_disable,
+        .force_suspend = autosuspend_force_suspend,
+        .set_wakeup_callback = autosuspend_set_wakeup_callback,
 };
 
 void start_earlysuspend_thread(void)
