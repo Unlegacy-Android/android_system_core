@@ -21,9 +21,6 @@
 extern "C" {
 #endif
 
-#define NATIVE_HANDLE_MAX_FDS 1024
-#define NATIVE_HANDLE_MAX_INTS 1024
-
 typedef struct native_handle
 {
     int version;        /* sizeof(native_handle_t) */
